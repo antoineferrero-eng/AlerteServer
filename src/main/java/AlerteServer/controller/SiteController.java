@@ -12,7 +12,7 @@ import java.util.List;
 
 
 @RestController
-@RequestMapping("/site")
+@RequestMapping("/sites")
 public class SiteController {
 
     @Autowired

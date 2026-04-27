@@ -1,12 +1,11 @@
 package AlerteServer.repository;
 
-import AlerteServer.entity.Alerte;
 import AlerteServer.entity.Bulletin;
-import AlerteServer.entity.Departement;
-import jakarta.transaction.Transactional;
+import AlerteServer.entity.Daily_meteo;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.transaction.annotation.Transactional;
 
-public interface AlerteRepository extends JpaRepository<Alerte, Integer>{
+public interface Daily_meteoRepository extends JpaRepository<Daily_meteo, Long> {
     @Transactional
     void deleteByBulletin(Bulletin bulletin);
 }

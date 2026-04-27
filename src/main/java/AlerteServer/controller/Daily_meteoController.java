@@ -1,31 +1,32 @@
 package AlerteServer.controller;
 
-import AlerteServer.entity.Departement;
-import AlerteServer.service.DepartementService;
+import AlerteServer.entity.Daily_meteo;
+import AlerteServer.service.Daily_meteoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Date;
 import java.util.List;
 
 
 @RestController
-@RequestMapping("/departements")
-public class DepartementController {
+@RequestMapping("/daily-meteos")
+public class Daily_meteoController {
 
     @Autowired
-    private DepartementService departementService;
+    private Daily_meteoService dailyMeteoService;
 
     @GetMapping
-    public List<Departement> getAll() {
-        return departementService.getAll();
+    public List<Daily_meteo> getAll() {
+        return dailyMeteoService.getAll();
     }
 
     @GetMapping("/{id}")
-    public Departement getById(@PathVariable String id) {
-        return departementService.getById(id);
+    public Daily_meteo getById(@PathVariable Long id) {
+        return dailyMeteoService.getById(id);
     }
 
 }

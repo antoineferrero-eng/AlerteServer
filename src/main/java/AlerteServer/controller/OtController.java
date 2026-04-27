@@ -14,7 +14,7 @@ import java.util.List;
 
 
 @RestController
-@RequestMapping("/ot")
+@RequestMapping("/ordre-de-travails")
 public class OtController {
 
     @Autowired

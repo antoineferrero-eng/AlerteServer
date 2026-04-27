@@ -14,7 +14,7 @@ import java.util.List;
 
 
 @RestController
-@RequestMapping("/alerte")
+@RequestMapping("/alertes")
 public class AlerteController {
 
     @Autowired
