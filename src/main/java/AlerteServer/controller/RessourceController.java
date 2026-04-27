@@ -5,12 +5,10 @@ import AlerteServer.entity.Site;
 import AlerteServer.service.RessourceService;
 import AlerteServer.service.SiteService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 
 @RestController
@@ -28,6 +26,13 @@ public class RessourceController {
     @GetMapping("/{id}")
     public Ressource getById(@PathVariable String id) {
         return ressourceService.getById(id);
+    }
+
+    @GetMapping("/concerne")
+    public List<Map<String, String>> getContacts(
+            @RequestParam("date") String date,
+            @RequestParam("dept") String deptNum) {
+        return ressourceService.getContactsByAlerte(date, deptNum);
     }
 
 }

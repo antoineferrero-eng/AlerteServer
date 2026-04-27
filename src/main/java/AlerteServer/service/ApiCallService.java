@@ -22,6 +22,7 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashSet;
 import java.util.List;
@@ -54,7 +55,7 @@ public class ApiCallService {
         this.objectMapper = objectMapper;
     }
 
-    @Scheduled(fixedRate = 3600000)
+    //@Scheduled(fixedRate = 3600000)
     public void runDailyImport() {
         log.info("Lancement de runDailyImport");
         try {
@@ -116,36 +117,45 @@ public class ApiCallService {
                 String deptNum = domainNode.path("domain_id").asText();
                 if (deptNum.equals("FRA")) continue;
 
-                if (deptNum.equals("2A") || deptNum.equals("2B")) deptNum = "20";
-
-                String finalDeptNum = deptNum;
-                Departement dept = departementRepository.findById(deptNum).orElseGet(() -> {
-                    Departement d = new Departement();
-                    d.setNum(finalDeptNum);
-                    return departementRepository.save(d);
-                });
-
-                Bulletin bulletin = bulletinRepository.findByDepartementAndDate(dept, targetDate)
-                        .orElseGet(() -> {
-                            Bulletin b = new Bulletin();
-                            b.setDepartement(dept);
-                            b.setDate(targetDate);
-                            return bulletinRepository.save(b);
-                        });
-
-                if (!clearedBulletins.contains(bulletin.getId())) {
-                    alerteRepository.deleteByBulletin(bulletin);
-                    clearedBulletins.add(bulletin.getId());
+                List<String> targetNums = new ArrayList<>();
+                if (deptNum.equals("2A") || deptNum.equals("2B")) {
+                    targetNums.add("20");
+                } else if (deptNum.equals("99")) {
+                    targetNums.add("MON");
+                    targetNums.add("AND");
+                } else {
+                    targetNums.add(deptNum);
                 }
 
-                JsonNode phenomenons = domainNode.path("phenomenon_items");
-                if (phenomenons.isArray()) {
-                    for (JsonNode phenomNode : phenomenons) {
-                        Alerte alerte = new Alerte();
-                        alerte.setType(phenomNode.path("phenomenon_id").asInt());
-                        alerte.setLevel(phenomNode.path("phenomenon_max_color_id").asInt());
-                        alerte.setBulletin(bulletin);
-                        alerteRepository.save(alerte);
+                for (String finalDeptNum : targetNums) {
+                    Departement dept = departementRepository.findById(finalDeptNum).orElseGet(() -> {
+                        Departement d = new Departement();
+                        d.setNum(finalDeptNum);
+                        return departementRepository.save(d);
+                    });
+
+                    Bulletin bulletin = bulletinRepository.findByDepartementAndDate(dept, targetDate)
+                            .orElseGet(() -> {
+                                Bulletin b = new Bulletin();
+                                b.setDepartement(dept);
+                                b.setDate(targetDate);
+                                return bulletinRepository.save(b);
+                            });
+
+                    if (!clearedBulletins.contains(bulletin.getId())) {
+                        alerteRepository.deleteByBulletin(bulletin);
+                        clearedBulletins.add(bulletin.getId());
+                    }
+
+                    JsonNode phenomenons = domainNode.path("phenomenon_items");
+                    if (phenomenons.isArray()) {
+                        for (JsonNode phenomNode : phenomenons) {
+                            Alerte alerte = new Alerte();
+                            alerte.setType(phenomNode.path("phenomenon_id").asInt());
+                            alerte.setLevel(phenomNode.path("phenomenon_max_color_id").asInt());
+                            alerte.setBulletin(bulletin);
+                            alerteRepository.save(alerte);
+                        }
                     }
                 }
             }
@@ -170,46 +180,47 @@ public class ApiCallService {
             if (response != null) {
                 if (response.isArray()) {
                     for (int j = 0; j < response.size(); j++) {
-                        processBatchItem(batch.get(j), response.get(j));
+                        saveDailyMeteoForIndex(batch.get(j), response.get(j), 0, LocalDate.now());
+                        saveDailyMeteoForIndex(batch.get(j), response.get(j), 1, LocalDate.now().plusDays(1));
                     }
                 } else {
-                    processBatchItem(batch.get(0), response);
+                    saveDailyMeteoForIndex(batch.get(0), response, 0, LocalDate.now());
+                    saveDailyMeteoForIndex(batch.get(0), response, 1, LocalDate.now().plusDays(1));
                 }
             }
         }
     }
 
-    private void processBatchItem(Departement dept, JsonNode itemNode) {
-        saveDailyMeteoForIndex(dept, itemNode, 0, LocalDate.now());
-        saveDailyMeteoForIndex(dept, itemNode, 1, LocalDate.now().plusDays(1));
-    }
-
     private void saveDailyMeteoForIndex(Departement dept, JsonNode fullNode, int index, LocalDate date) {
-        bulletinRepository.findByDepartementAndDate(dept, date).ifPresent(bulletin -> {
-            dailyMeteoRepository.deleteByBulletin(bulletin);
+        List<String> targetCodes = "99".equals(dept.getNum()) ? List.of("99A", "99B") : List.of(dept.getNum());
 
-            ObjectNode singleDayNode = objectMapper.createObjectNode();
+        for (String code : targetCodes) {
+            departementRepository.findById(code).ifPresent(targetDept -> {
+                bulletinRepository.findByDepartementAndDate(targetDept, date).ifPresent(bulletin -> {
+                    dailyMeteoRepository.deleteByBulletin(bulletin);
 
-            fullNode.fields().forEachRemaining(entry -> {
-                if (!entry.getKey().equals("daily")) {
-                    singleDayNode.set(entry.getKey(), entry.getValue());
-                }
+                    ObjectNode singleDayNode = objectMapper.createObjectNode();
+                    fullNode.fields().forEachRemaining(entry -> {
+                        if (!entry.getKey().equals("daily")) {
+                            singleDayNode.set(entry.getKey(), entry.getValue());
+                        }
+                    });
+
+                    ObjectNode dailySingleNode = objectMapper.createObjectNode();
+                    JsonNode dailyAll = fullNode.path("daily");
+                    dailyAll.fields().forEachRemaining(entry -> {
+                        if (entry.getValue().isArray() && entry.getValue().size() > index) {
+                            dailySingleNode.set(entry.getKey(), entry.getValue().get(index));
+                        }
+                    });
+                    singleDayNode.set("daily", dailySingleNode);
+
+                    Daily_meteo dm = new Daily_meteo();
+                    dm.setBulletin(bulletin);
+                    dm.setData(singleDayNode.toString());
+                    dailyMeteoRepository.save(dm);
+                });
             });
-
-            ObjectNode dailySingleNode = objectMapper.createObjectNode();
-            JsonNode dailyAll = fullNode.path("daily");
-            dailyAll.fields().forEachRemaining(entry -> {
-                if (entry.getValue().isArray() && entry.getValue().size() > index) {
-                    dailySingleNode.set(entry.getKey(), entry.getValue().get(index));
-                }
-            });
-
-            singleDayNode.set("daily", dailySingleNode);
-
-            Daily_meteo dm = new Daily_meteo();
-            dm.setBulletin(bulletin);
-            dm.setData(singleDayNode.toString());
-            dailyMeteoRepository.save(dm);
-        });
+        }
     }
 }
