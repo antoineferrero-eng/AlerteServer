@@ -25,7 +25,7 @@ public class RessourceService {
                 .orElseThrow(() -> new IdNotFoundException("Ressource not found: " + id));
     }
 
-    public List<Map<String, String>> getContactsByAlerte(String date, String deptNum) {
+    public List<Map<String, Object>> getContactsByAlerte(String date,  String deptNum) {
         LocalDate parsedDate = LocalDate.parse(date);
         return ressourceRepository.findContactsByAlerte(parsedDate, deptNum);
     }

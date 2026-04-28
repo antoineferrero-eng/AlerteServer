@@ -4,15 +4,13 @@ import AlerteServer.entity.Alerte;
 import AlerteServer.entity.Bulletin;
 import AlerteServer.entity.Daily_meteo;
 import AlerteServer.entity.Departement;
-import AlerteServer.repository.AlerteRepository;
-import AlerteServer.repository.BulletinRepository;
-import AlerteServer.repository.Daily_meteoRepository;
-import AlerteServer.repository.DepartementRepository;
+import AlerteServer.repository.*;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -22,17 +20,16 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 public class ApiCallService {
 
     private static final Logger log = LoggerFactory.getLogger(ApiCallService.class);
+
+    @Autowired
+    EmailService emailService;
 
     private final BulletinRepository bulletinRepository;
     private final AlerteRepository alerteRepository;
@@ -65,6 +62,8 @@ public class ApiCallService {
                 processAndSaveVigilanceData(data);
                 fetchAndSaveAllDailyMeteo();
                 log.info("Importation complete terminee avec succes");
+                emailService.sendAlertEmails("2026-04-28", "MON");
+                log.info("Envoie mail a Monaco");
             }
         } catch (Exception e) {
             log.error("Erreur dans runDailyImport", e);
@@ -74,7 +73,6 @@ public class ApiCallService {
     private void purgeOldData() {
         LocalDate limitDate = LocalDate.now().minusMonths(1);
         log.info("Purge des bulletins antérieurs au : {}", limitDate);
-
         try {
             bulletinRepository.deleteOldBulletins(limitDate);
             log.info("Purge effectuée avec succès.");
@@ -206,7 +204,6 @@ public class ApiCallService {
 
     private void saveDailyMeteoForIndex(Departement dept, JsonNode fullNode, int index, LocalDate date) {
         List<String> targetCodes = "99".equals(dept.getNum()) ? List.of("99A", "99B") : List.of(dept.getNum());
-
         for (String code : targetCodes) {
             departementRepository.findById(code).ifPresent(targetDept -> {
                 bulletinRepository.findByDepartementAndDate(targetDept, date).ifPresent(bulletin -> {
@@ -236,4 +233,6 @@ public class ApiCallService {
             });
         }
     }
+
+
 }

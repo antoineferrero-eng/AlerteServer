@@ -29,7 +29,7 @@ public class RessourceController {
     }
 
     @GetMapping("/concerne")
-    public List<Map<String, String>> getContacts(
+    public List<Map<String, Object>> getContacts(
             @RequestParam("date") String date,
             @RequestParam("dept") String deptNum) {
         return ressourceService.getContactsByAlerte(date, deptNum);

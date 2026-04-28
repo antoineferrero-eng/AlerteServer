@@ -1,0 +1,164 @@
+package AlerteServer.service;
+
+import AlerteServer.repository.RessourceRepository;
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+@Service
+public class EmailService {
+
+    @Autowired
+    private JavaMailSender mailSender;
+
+    @Autowired
+    private RessourceRepository ressourceRepository;
+
+    private List<String> activeLevels;
+
+    public EmailService(@Value("${alerte.niveaux.actifs:2,3,4}") List<String> initialActiveLevels) {
+        this.activeLevels = new ArrayList<>(initialActiveLevels);
+    }
+
+    public List<String> getActiveLevels() {
+        return activeLevels;
+    }
+
+    public void setActiveLevels(List<String> activeLevels) {
+        this.activeLevels = activeLevels;
+    }
+
+    public void sendHtmlEmail(String to, String subject, String htmlContent) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom("dacvigilance@gmail.com");
+            helper.setTo(to);
+            helper.setSubject(subject);
+            helper.setText(htmlContent, true);
+            mailSender.send(message);
+        } catch (MessagingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void sendAlertEmails(String dateStr, String deptNum) {
+        LocalDate date = LocalDate.parse(dateStr);
+        List<Map<String, Object>> contacts = ressourceRepository.findContactsByAlerte(date, deptNum);
+
+        Map<String, List<Map<String, Object>>> alertsByEmail = new HashMap<>();
+
+        for (Map<String, Object> contact : contacts) {
+            String email = String.valueOf(contact.get("email"));
+            if (email != null && !email.isEmpty() && !"null".equals(email)) {
+                alertsByEmail.computeIfAbsent(email, k -> new ArrayList<>()).add(contact);
+            }
+        }
+
+        for (Map.Entry<String, List<Map<String, Object>>> entry : alertsByEmail.entrySet()) {
+            boolean hasAlert = entry.getValue().stream()
+                    .anyMatch(a -> activeLevels.contains(String.valueOf(a.get("niveau"))));
+
+            if (hasAlert) {
+                String email = entry.getKey();
+                String message = buildMessage(entry.getValue(), deptNum);
+                sendHtmlEmail(email, "ALERTE MÉTÉO", message);
+            }
+        }
+    }
+
+    private String buildMessage(List<Map<String, Object>> alerts, String deptNum) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("<html><body style=\"font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; padding: 20px; margin: 0;\">");
+        sb.append("<div style=\"max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);\">");
+        sb.append("<div style=\"background-color: #2c3e50; color: #ffffff; padding: 20px; text-align: center;\">");
+        sb.append("<h2 style=\"margin: 0; font-size: 24px;\">Vigilance Météo</h2>");
+        sb.append("<p style=\"margin: 5px 0 0 0; font-size: 16px; opacity: 0.9;\">Département ").append(deptNum).append("</p>");
+        sb.append("</div>");
+        sb.append("<div style=\"padding: 30px;\">");
+        sb.append("<p style=\"font-size: 16px; color: #333333; margin-top: 0;\">Bonjour,</p>");
+        sb.append("<p style=\"font-size: 16px; color: #555555; line-height: 1.5;\">Des alertes météorologiques sont en cours dans le département où vous avez une intervention prévue.</p>");
+        sb.append("<h3 style=\"color: #2c3e50; margin-top: 25px; border-bottom: 2px solid #ecf0f1; padding-bottom: 10px;\">Récapitulatif des alertes actives :</h3>");
+
+        for (Map<String, Object> alert : alerts) {
+            String levelValue = String.valueOf(alert.get("niveau"));
+
+            if (activeLevels.contains(levelValue)) {
+                String type = getAlertTypeName(String.valueOf(alert.get("type")));
+                String advice = getAlertAdvice(String.valueOf(alert.get("type")));
+                String level = getAlertLevelName(levelValue);
+                String color = getColor(levelValue);
+                String bgColor = getBgColor(levelValue);
+
+                sb.append("<div style=\"margin-bottom: 20px; padding: 15px; border-left: 5px solid ").append(color).append("; background-color: ").append(bgColor).append("; border-radius: 0 6px 6px 0;\">");
+                sb.append("<h4 style=\"margin: 0 0 8px 0; color: ").append(color).append("; font-size: 18px;\">").append(type).append(" - Niveau ").append(level).append("</h4>");
+                sb.append("<p style=\"margin: 0; font-size: 15px; color: #444444; line-height: 1.5;\"><strong>Conseil : </strong>").append(advice).append("</p>");
+                sb.append("</div>");
+            }
+        }
+
+        sb.append("<p style=\"font-size: 16px; color: #555555; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ecf0f1;\">Merci de prendre les précautions nécessaires avant votre déplacement.</p>");
+        sb.append("<p style=\"font-size: 16px; color: #333333; font-weight: bold;\">Merci de votre compréhension.</p>");
+        sb.append("</div></div></body></html>");
+
+        return sb.toString();
+    }
+
+    private String getColor(String levelId) {
+        if ("2".equals(levelId)) return "#f39c12";
+        if ("3".equals(levelId)) return "#d35400";
+        if ("4".equals(levelId)) return "#c0392b";
+        return "#27ae60";
+    }
+
+    private String getBgColor(String levelId) {
+        if ("2".equals(levelId)) return "#fdf8e3";
+        if ("3".equals(levelId)) return "#fbeee6";
+        if ("4".equals(levelId)) return "#fadbd8";
+        return "#eafaf1";
+    }
+
+    private String getAlertTypeName(String typeId) {
+        if ("1".equals(typeId)) return "Vent Violent";
+        if ("2".equals(typeId)) return "Pluie-Inondation";
+        if ("3".equals(typeId)) return "Orages";
+        if ("4".equals(typeId)) return "Inondation";
+        if ("5".equals(typeId)) return "Neige-verglas";
+        if ("6".equals(typeId)) return "Canicule";
+        if ("7".equals(typeId)) return "Grand Froid";
+        if ("8".equals(typeId)) return "Avalanches";
+        if ("9".equals(typeId)) return "Vagues-Submersion";
+        return "Phénomène météo";
+    }
+
+    private String getAlertAdvice(String typeId) {
+        if ("1".equals(typeId)) return "Sécurisez votre matériel léger en toiture et reportez les interventions en hauteur (groupes froids extérieurs, conduits d'évacuation).";
+        if ("2".equals(typeId)) return "Prudence lors des accès aux chaufferies en sous-sol (risque d'inondation) et isolez rigoureusement vos raccordements électriques.";
+        if ("3".equals(typeId)) return "Stoppez immédiatement les manipulations sur les tableaux électriques et éloignez-vous des unités climatiques extérieures.";
+        if ("4".equals(typeId)) return "N'intervenez en aucun cas dans une chaufferie ou un local technique inondé. Coupez l'alimentation générale si la sécurité le permet.";
+        if ("5".equals(typeId)) return "Anticipez vos temps de trajet et redoublez de vigilance face au risque de glissade sur les toits-terrasses et les passerelles.";
+        if ("6".equals(typeId)) return "Forte sollicitation prévue sur les systèmes de réfrigération/climatisation. Hydratez-vous et faites des pauses, surtout en comble ou en toiture.";
+        if ("7".equals(typeId)) return "Risque élevé de gel sur les tuyauteries et condensats. Prévoyez des vêtements thermiques pour les dépannages prolongés en extérieur.";
+        if ("8".equals(typeId)) return "Respectez scrupuleusement les fermetures de routes lors de vos accès aux sites ou stations d'altitude.";
+        if ("9".equals(typeId)) return "Reportez toute maintenance sur les groupes de condensation ou pompes à chaleur situés en front de mer directement exposés.";
+        return "Adaptez vos Équipements de Protection Individuelle (EPI) aux conditions et restez prudent sur le site d'intervention.";
+    }
+
+    private String getAlertLevelName(String levelId) {
+        if ("1".equals(levelId)) return "VERT";
+        if ("2".equals(levelId)) return "JAUNE";
+        if ("3".equals(levelId)) return "ORANGE";
+        if ("4".equals(levelId)) return "ROUGE";
+        return "INCONNU";
+    }
+}

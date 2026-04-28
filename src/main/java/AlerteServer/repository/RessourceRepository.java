@@ -19,6 +19,6 @@ public interface RessourceRepository extends JpaRepository<Ressource, String> {
             "JOIN alerte a ON a.id_bulletin = b.id " +
             "WHERE b.date = CAST(CAST(:date AS TEXT) AS DATE) " +
             "AND b.id_departement = CAST(:deptNum AS TEXT)", nativeQuery = true)
-    List<Map<String, String>> findContactsByAlerte(@Param("date") LocalDate date,
+    List<Map<String, Object>> findContactsByAlerte(@Param("date") LocalDate date,
                                                    @Param("deptNum") String deptNum);
 }
