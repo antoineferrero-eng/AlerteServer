@@ -26,7 +26,7 @@ public class EmailService {
 
     private List<String> activeLevels;
 
-    public EmailService(@Value("${alerte.niveaux.actifs:2,3,4}") List<String> initialActiveLevels) {
+    public EmailService(@Value("${alerte.niveaux.actifs:1,2,3,4}") List<String> initialActiveLevels) {
         this.activeLevels = new ArrayList<>(initialActiveLevels);
     }
 

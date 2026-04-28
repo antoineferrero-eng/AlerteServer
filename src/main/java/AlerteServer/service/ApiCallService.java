@@ -29,30 +29,37 @@ public class ApiCallService {
     private static final Logger log = LoggerFactory.getLogger(ApiCallService.class);
 
     @Autowired
-    EmailService emailService;
+    private EmailService emailService;
 
-    private final BulletinRepository bulletinRepository;
-    private final AlerteRepository alerteRepository;
-    private final DepartementRepository departementRepository;
-    private final Daily_meteoRepository dailyMeteoRepository;
-    private final WebClient webClient;
-    private final ObjectMapper objectMapper;
+    @Autowired
+    private BulletinRepository bulletinRepository;
 
-    public ApiCallService(BulletinRepository bulletinRepository,
-                          AlerteRepository alerteRepository,
-                          DepartementRepository departementRepository,
-                          Daily_meteoRepository dailyMeteoRepository,
-                          WebClient.Builder webClientBuilder,
-                          ObjectMapper objectMapper) {
-        this.bulletinRepository = bulletinRepository;
-        this.alerteRepository = alerteRepository;
-        this.departementRepository = departementRepository;
-        this.dailyMeteoRepository = dailyMeteoRepository;
+    @Autowired
+    private AlerteRepository alerteRepository;
+
+    @Autowired
+    private DepartementRepository departementRepository;
+
+    @Autowired
+    private Daily_meteoRepository dailyMeteoRepository;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    private WebClient webClient;
+
+    @Autowired
+    public void setWebClient(WebClient.Builder webClientBuilder) {
         this.webClient = webClientBuilder.build();
-        this.objectMapper = objectMapper;
     }
 
     @Scheduled(fixedRate = 3600000)
+    private void oui(){
+        emailService.sendAlertEmails("2026-04-28","MON");
+//        sendAlertEmailsToAllDepartments();
+        log.info("Envoi mail");
+    }
+    //@Scheduled(fixedRate = 3600000)
     public void runDailyImport() {
         log.info("Lancement de runDailyImport");
         try {
@@ -62,8 +69,7 @@ public class ApiCallService {
                 processAndSaveVigilanceData(data);
                 fetchAndSaveAllDailyMeteo();
                 log.info("Importation complete terminee avec succes");
-                emailService.sendAlertEmails("2026-04-28", "MON");
-                log.info("Envoie mail a Monaco");
+                log.info("Envoi mail");
             }
         } catch (Exception e) {
             log.error("Erreur dans runDailyImport", e);
@@ -234,5 +240,17 @@ public class ApiCallService {
         }
     }
 
+    public void sendAlertEmailsToAllDepartments() {
+        String today = LocalDate.now().toString();
+        List<Departement> departments = departementRepository.findAll();
+
+        for (Departement dept : departments) {
+            try {
+                emailService.sendAlertEmails(today, dept.getNum());
+            } catch (Exception e) {
+                log.error("Error sending alert emails for department: " + dept.getNum(), e);
+            }
+        }
+    }
 
 }
