@@ -18,10 +18,10 @@ public class Bulletin {
     @JoinColumn(name = "id_departement")
     private Departement departement;
 
-    @OneToMany(mappedBy = "bulletin", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "bulletin", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Alerte> alertes;
 
-    @OneToMany(mappedBy = "bulletin", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "bulletin", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Daily_meteo> dailyMeteos;
 
     public Long getId() { return id; }

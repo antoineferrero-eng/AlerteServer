@@ -55,10 +55,11 @@ public class ApiCallService {
         this.objectMapper = objectMapper;
     }
 
-    //@Scheduled(fixedRate = 3600000)
+    @Scheduled(fixedRate = 3600000)
     public void runDailyImport() {
         log.info("Lancement de runDailyImport");
         try {
+            purgeOldData();
             JsonNode data = fetchVigilanceData();
             if (data != null) {
                 processAndSaveVigilanceData(data);
@@ -67,6 +68,18 @@ public class ApiCallService {
             }
         } catch (Exception e) {
             log.error("Erreur dans runDailyImport", e);
+        }
+    }
+
+    private void purgeOldData() {
+        LocalDate limitDate = LocalDate.now().minusMonths(1);
+        log.info("Purge des bulletins antérieurs au : {}", limitDate);
+
+        try {
+            bulletinRepository.deleteOldBulletins(limitDate);
+            log.info("Purge effectuée avec succès.");
+        } catch (Exception e) {
+            log.error("Erreur lors de la purge des données", e);
         }
     }
 

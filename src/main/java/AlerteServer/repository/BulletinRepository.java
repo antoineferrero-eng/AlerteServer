@@ -2,7 +2,9 @@ package AlerteServer.repository;
 
 import AlerteServer.entity.Bulletin;
 import AlerteServer.entity.Departement;
+import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -67,4 +69,9 @@ public interface BulletinRepository extends JpaRepository<Bulletin, Integer>{
             ") FROM departement d WHERE d.num = b.id_departement)" +
             ")) AS TEXT) FROM bulletin b WHERE b.id_departement = :dep", nativeQuery = true)
     String findBulletinByDepJson(@Param("dep") String dep);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM Bulletin b WHERE b.date < :dateThreshold")
+    void deleteOldBulletins(@Param("dateThreshold") LocalDate dateThreshold);
 }
