@@ -1,6 +1,5 @@
 package AlerteServer.repository;
 
-import AlerteServer.entity.Alertes;
 import AlerteServer.entity.DailyMeteo;
 import org.springframework.data.jpa.repository.JpaRepository;
 

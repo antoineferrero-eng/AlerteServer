@@ -1,10 +1,8 @@
 package AlerteServer.service;
 
 import AlerteServer.entity.Ressource;
-import AlerteServer.entity.Site;
-import AlerteServer.exeption.IdNotFoundException;
+import AlerteServer.exception.IdNotFoundException;
 import AlerteServer.repository.RessourceRepository;
-import AlerteServer.repository.SiteRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

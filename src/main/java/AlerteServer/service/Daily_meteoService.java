@@ -1,12 +1,11 @@
 package AlerteServer.service;
 
 import AlerteServer.entity.Daily_meteo;
-import AlerteServer.exeption.IdNotFoundException;
+import AlerteServer.exception.IdNotFoundException;
 import AlerteServer.repository.Daily_meteoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
 import java.util.List;
 
 @Service

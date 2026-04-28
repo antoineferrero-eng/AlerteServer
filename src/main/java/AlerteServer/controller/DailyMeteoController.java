@@ -1,9 +1,7 @@
 package AlerteServer.controller;
 
 import AlerteServer.entity.DailyMeteo;
-import AlerteServer.entity.Vigilance;
 import AlerteServer.service.DailyMeteoService;
-import AlerteServer.service.VigilanceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
