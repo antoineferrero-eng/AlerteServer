@@ -52,13 +52,6 @@ public class ApiCallService {
     public void setWebClient(WebClient.Builder webClientBuilder) {
         this.webClient = webClientBuilder.build();
     }
-
-    @Scheduled(fixedRate = 3600000)
-    private void oui(){
-        emailService.sendAlertEmails("2026-04-28","MON");
-//        sendAlertEmailsToAllDepartments();
-        log.info("Envoi mail");
-    }
     //@Scheduled(fixedRate = 3600000)
     public void runDailyImport() {
         log.info("Lancement de runDailyImport");
@@ -69,7 +62,8 @@ public class ApiCallService {
                 processAndSaveVigilanceData(data);
                 fetchAndSaveAllDailyMeteo();
                 log.info("Importation complete terminee avec succes");
-                log.info("Envoi mail");
+//                sendAlertEmailsToAllDepartments();
+//                log.info("Envoi mail");
             }
         } catch (Exception e) {
             log.error("Erreur dans runDailyImport", e);

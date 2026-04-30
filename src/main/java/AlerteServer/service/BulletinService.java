@@ -6,6 +6,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+
 @Service
 public class BulletinService {
 
@@ -32,5 +34,14 @@ public class BulletinService {
     public JsonNode getByDep(String dep) throws Exception {
         String jsonRaw = bulletinRepository.findBulletinByDepJson(dep);
         return (jsonRaw != null) ? objectMapper.readTree(jsonRaw) : objectMapper.createArrayNode();
+    }
+
+    public JsonNode getByDate(String dateStr) throws Exception {
+        LocalDate date = LocalDate.parse(dateStr);
+        String json = bulletinRepository.findBulletinsByDateJson(date);
+        if (json == null) {
+            return objectMapper.createArrayNode();
+        }
+        return objectMapper.readTree(json);
     }
 }

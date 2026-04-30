@@ -33,4 +33,9 @@ public class BulletinController {
     public JsonNode getByDep(@PathVariable String dep) throws Exception {
         return bulletinService.getByDep(dep);
     }
+
+    @GetMapping("/date/{date}")
+    public JsonNode getByDate(@PathVariable String date) throws Exception {
+        return bulletinService.getByDate(date);
+    }
 }

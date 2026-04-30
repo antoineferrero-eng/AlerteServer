@@ -70,6 +70,15 @@ public interface BulletinRepository extends JpaRepository<Bulletin, Integer>{
             ")) AS TEXT) FROM bulletin b WHERE b.id_departement = :dep", nativeQuery = true)
     String findBulletinByDepJson(@Param("dep") String dep);
 
+    @Query(value = "SELECT CAST(jsonb_agg(jsonb_build_object(" +
+            "'id', b.id, " +
+            "'date', b.date, " +
+            "'alertes', (SELECT jsonb_agg(jsonb_build_object('type', a.type, 'level', a.level)) FROM alerte a WHERE a.id_bulletin = b.id), " +
+            "'dailyMeteos', (SELECT jsonb_agg(jsonb_build_object('id', dm.id, 'data', dm.data)) FROM daily_meteo dm WHERE dm.id_bulletin = b.id), " +
+            "'departement', (SELECT jsonb_build_object('num', d.num, 'lat', d.lat, 'long', d.long) FROM departement d WHERE d.num = b.id_departement)" +
+            ")) AS TEXT) FROM bulletin b WHERE b.date = :date", nativeQuery = true)
+    String findBulletinsByDateJson(@Param("date") LocalDate date);
+
     @Modifying
     @Transactional
     @Query("DELETE FROM Bulletin b WHERE b.date < :dateThreshold")
