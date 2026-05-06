@@ -1,5 +1,6 @@
 package AlerteServer.service;
 
+import AlerteServer.dto.ContactAlerteDTO;
 import AlerteServer.repository.RessourceRepository;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
@@ -26,7 +27,7 @@ public class EmailService {
 
     private List<String> activeLevels;
 
-    public EmailService(@Value("${alerte.niveaux.actifs:1,2,3,4}") List<String> initialActiveLevels) {
+    public EmailService(@Value("${alerte.niveaux.actifs:2,3,4}") List<String> initialActiveLevels) {
         this.activeLevels = new ArrayList<>(initialActiveLevels);
     }
 
@@ -54,20 +55,20 @@ public class EmailService {
 
     public void sendAlertEmails(String dateStr, String deptNum) {
         LocalDate date = LocalDate.parse(dateStr);
-        List<Map<String, Object>> contacts = ressourceRepository.findContactsByAlerte(date, deptNum);
+        List<ContactAlerteDTO> contacts = ressourceRepository.findContactsByAlerte(date, deptNum);
 
-        Map<String, List<Map<String, Object>>> alertsByEmail = new HashMap<>();
+        Map<String, List<ContactAlerteDTO>> alertsByEmail = new HashMap<>();
 
-        for (Map<String, Object> contact : contacts) {
-            String email = String.valueOf(contact.get("email"));
+        for (ContactAlerteDTO contact : contacts) {
+            String email = contact.email();
             if (email != null && !email.isEmpty() && !"null".equals(email)) {
                 alertsByEmail.computeIfAbsent(email, k -> new ArrayList<>()).add(contact);
             }
         }
 
-        for (Map.Entry<String, List<Map<String, Object>>> entry : alertsByEmail.entrySet()) {
+        for (Map.Entry<String, List<ContactAlerteDTO>> entry : alertsByEmail.entrySet()) {
             boolean hasAlert = entry.getValue().stream()
-                    .anyMatch(a -> activeLevels.contains(String.valueOf(a.get("niveau"))));
+                    .anyMatch(a -> activeLevels.contains(String.valueOf(a.niveau())));
 
             if (hasAlert) {
                 String email = entry.getKey();
@@ -77,7 +78,7 @@ public class EmailService {
         }
     }
 
-    private String buildMessage(List<Map<String, Object>> alerts, String deptNum) {
+    private String buildMessage(List<ContactAlerteDTO> alerts, String deptNum) {
         StringBuilder sb = new StringBuilder();
         sb.append("<html><body style=\"font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; padding: 20px; margin: 0;\">");
         sb.append("<div style=\"max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);\">");
@@ -90,12 +91,12 @@ public class EmailService {
         sb.append("<p style=\"font-size: 16px; color: #555555; line-height: 1.5;\">Des alertes météorologiques sont en cours dans le département où vous avez une intervention prévue.</p>");
         sb.append("<h3 style=\"color: #2c3e50; margin-top: 25px; border-bottom: 2px solid #ecf0f1; padding-bottom: 10px;\">Récapitulatif des alertes actives :</h3>");
 
-        for (Map<String, Object> alert : alerts) {
-            String levelValue = String.valueOf(alert.get("niveau"));
+        for (ContactAlerteDTO alert : alerts) {
+            String levelValue = String.valueOf(alert.niveau());
 
             if (activeLevels.contains(levelValue)) {
-                String type = getAlertTypeName(String.valueOf(alert.get("type")));
-                String advice = getAlertAdvice(String.valueOf(alert.get("type")));
+                String type = getAlertTypeName(String.valueOf(alert.type()));
+                String advice = getAlertAdvice(String.valueOf(alert.type()));
                 String level = getAlertLevelName(levelValue);
                 String color = getColor(levelValue);
                 String bgColor = getBgColor(levelValue);

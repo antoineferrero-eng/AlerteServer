@@ -1,15 +1,13 @@
 package AlerteServer.controller;
 
+import AlerteServer.dto.ContactAlerteDTO;
+import AlerteServer.dto.RessourceDTO;
 import AlerteServer.entity.Ressource;
-import AlerteServer.entity.Site;
 import AlerteServer.service.RessourceService;
-import AlerteServer.service.SiteService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
-
 
 @RestController
 @RequestMapping("/ressources")
@@ -19,20 +17,19 @@ public class RessourceController {
     private RessourceService ressourceService;
 
     @GetMapping
-    public List<Ressource> getAll() {
+    public List<RessourceDTO> getAll() {
         return ressourceService.getAll();
     }
 
     @GetMapping("/{id}")
-    public Ressource getById(@PathVariable String id) {
+    public RessourceDTO getById(@PathVariable String id) {
         return ressourceService.getById(id);
     }
 
-    @GetMapping("/concerne")
-    public List<Map<String, Object>> getContacts(
+    @GetMapping("/concerned")
+    public List<ContactAlerteDTO> getContacts(
             @RequestParam("date") String date,
             @RequestParam("dept") String deptNum) {
         return ressourceService.getContactsByAlerte(date, deptNum);
     }
-
 }

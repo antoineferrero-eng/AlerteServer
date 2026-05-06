@@ -6,8 +6,6 @@ import AlerteServer.entity.Daily_meteo;
 import AlerteServer.entity.Departement;
 import AlerteServer.repository.*;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,8 +16,10 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -43,27 +43,25 @@ public class ApiCallService {
     @Autowired
     private Daily_meteoRepository dailyMeteoRepository;
 
-    @Autowired
-    private ObjectMapper objectMapper;
-
     private WebClient webClient;
 
     @Autowired
     public void setWebClient(WebClient.Builder webClientBuilder) {
         this.webClient = webClientBuilder.build();
     }
+
     //@Scheduled(fixedRate = 3600000)
+    @Transactional
     public void runDailyImport() {
         log.info("Lancement de runDailyImport");
         try {
             purgeOldData();
+//            sendAlertEmailsToAllDepartments();
             JsonNode data = fetchVigilanceData();
             if (data != null) {
                 processAndSaveVigilanceData(data);
                 fetchAndSaveAllDailyMeteo();
                 log.info("Importation complete terminee avec succes");
-//                sendAlertEmailsToAllDepartments();
-//                log.info("Envoi mail");
             }
         } catch (Exception e) {
             log.error("Erreur dans runDailyImport", e);
@@ -209,29 +207,70 @@ public class ApiCallService {
                 bulletinRepository.findByDepartementAndDate(targetDept, date).ifPresent(bulletin -> {
                     dailyMeteoRepository.deleteByBulletin(bulletin);
 
-                    ObjectNode singleDayNode = objectMapper.createObjectNode();
-                    fullNode.fields().forEachRemaining(entry -> {
-                        if (!entry.getKey().equals("daily")) {
-                            singleDayNode.set(entry.getKey(), entry.getValue());
-                        }
-                    });
+                    JsonNode dailyData = fullNode.path("daily");
 
-                    ObjectNode dailySingleNode = objectMapper.createObjectNode();
-                    JsonNode dailyAll = fullNode.path("daily");
-                    dailyAll.fields().forEachRemaining(entry -> {
-                        if (entry.getValue().isArray() && entry.getValue().size() > index) {
-                            dailySingleNode.set(entry.getKey(), entry.getValue().get(index));
-                        }
-                    });
-                    singleDayNode.set("daily", dailySingleNode);
+                    if (!dailyData.isMissingNode() && dailyData.path("time").isArray() && dailyData.path("time").size() > index) {
+                        Daily_meteo dm = new Daily_meteo();
+                        dm.setBulletin(bulletin);
+                        dm.setDate(date);
 
-                    Daily_meteo dm = new Daily_meteo();
-                    dm.setBulletin(bulletin);
-                    dm.setData(singleDayNode.toString());
-                    dailyMeteoRepository.save(dm);
+                        dm.setWeatherCode(getSafeInt(dailyData, "weather_code", index));
+                        dm.setTempMax(getSafeDouble(dailyData, "temperature_2m_max", index));
+                        dm.setTempMin(getSafeDouble(dailyData, "temperature_2m_min", index));
+                        dm.setApparentTempMax(getSafeDouble(dailyData, "apparent_temperature_max", index));
+                        dm.setApparentTempMin(getSafeDouble(dailyData, "apparent_temperature_min", index));
+
+                        String sunriseStr = getSafeString(dailyData, "sunrise", index);
+                        if (sunriseStr != null) dm.setSunrise(LocalDateTime.parse(sunriseStr));
+
+                        String sunsetStr = getSafeString(dailyData, "sunset", index);
+                        if (sunsetStr != null) dm.setSunset(LocalDateTime.parse(sunsetStr));
+
+                        dm.setDaylightDuration(getSafeDouble(dailyData, "daylight_duration", index));
+                        dm.setSunshineDuration(getSafeDouble(dailyData, "sunshine_duration", index));
+                        dm.setUvIndexMax(getSafeDouble(dailyData, "uv_index_max", index));
+                        dm.setUvIndexClearSkyMax(getSafeDouble(dailyData, "uv_index_clear_sky_max", index));
+                        dm.setRainSum(getSafeDouble(dailyData, "rain_sum", index));
+                        dm.setShowersSum(getSafeDouble(dailyData, "showers_sum", index));
+                        dm.setSnowfallSum(getSafeDouble(dailyData, "snowfall_sum", index));
+                        dm.setPrecipitationSum(getSafeDouble(dailyData, "precipitation_sum", index));
+                        dm.setPrecipitationHours(getSafeDouble(dailyData, "precipitation_hours", index));
+                        dm.setPrecipitationProbabilityMax(getSafeInt(dailyData, "precipitation_probability_max", index));
+                        dm.setWindSpeedMax(getSafeDouble(dailyData, "wind_speed_10m_max", index));
+                        dm.setWindGustsMax(getSafeDouble(dailyData, "wind_gusts_10m_max", index));
+                        dm.setWindDirectionDominant(getSafeInt(dailyData, "wind_direction_10m_dominant", index));
+                        dm.setShortwaveRadiationSum(getSafeDouble(dailyData, "shortwave_radiation_sum", index));
+                        dm.setEvapotranspiration(getSafeDouble(dailyData, "et0_fao_evapotranspiration", index));
+
+                        dailyMeteoRepository.save(dm);
+                    }
                 });
             });
         }
+    }
+
+    private Double getSafeDouble(JsonNode parent, String fieldName, int index) {
+        JsonNode arrayNode = parent.path(fieldName);
+        if (arrayNode.isArray() && arrayNode.size() > index && !arrayNode.get(index).isNull()) {
+            return arrayNode.get(index).asDouble();
+        }
+        return null;
+    }
+
+    private Integer getSafeInt(JsonNode parent, String fieldName, int index) {
+        JsonNode arrayNode = parent.path(fieldName);
+        if (arrayNode.isArray() && arrayNode.size() > index && !arrayNode.get(index).isNull()) {
+            return arrayNode.get(index).asInt();
+        }
+        return null;
+    }
+
+    private String getSafeString(JsonNode parent, String fieldName, int index) {
+        JsonNode arrayNode = parent.path(fieldName);
+        if (arrayNode.isArray() && arrayNode.size() > index && !arrayNode.get(index).isNull()) {
+            return arrayNode.get(index).asText();
+        }
+        return null;
     }
 
     public void sendAlertEmailsToAllDepartments() {

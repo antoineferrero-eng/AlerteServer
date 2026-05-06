@@ -1,5 +1,6 @@
 package AlerteServer.service;
 
+import AlerteServer.dto.SiteDTO;
 import AlerteServer.entity.Site;
 import AlerteServer.exception.IdNotFoundException;
 import AlerteServer.repository.SiteRepository;
@@ -14,12 +15,22 @@ public class SiteService {
     @Autowired
     private SiteRepository siteRepository;
 
-    public List<Site> getAll() {
-        return siteRepository.findAll();
+    public List<SiteDTO> getAll() {
+        return siteRepository.findAll()
+                .stream()
+                .map(this::mapToDTO)
+                .toList();
     }
 
-    public Site getById(String id) {
+    public SiteDTO getById(String id) {
         return siteRepository.findById(id)
+                .map(this::mapToDTO)
                 .orElseThrow(() -> new IdNotFoundException("Site not found: " + id));
+    }
+
+    private SiteDTO mapToDTO(Site site) {
+        String parentId = (site.getParent() != null) ? site.getParent().getDkCode() : null;
+        String deptNum = (site.getDepartement() != null) ? site.getDepartement().getNum() : null;
+        return new SiteDTO(site.getDkCode(), deptNum, parentId);
     }
 }
