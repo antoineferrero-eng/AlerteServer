@@ -1,11 +1,14 @@
 package AlerteServer.service;
 
+import AlerteServer.config.AppConfig;
 import AlerteServer.dto.ContactAlerteDTO;
+import AlerteServer.entity.Departement;
+import AlerteServer.repository.DepartementRepository;
 import AlerteServer.repository.RessourceRepository;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -19,25 +22,23 @@ import java.util.Map;
 @Service
 public class EmailService {
 
-    @Autowired
-    private JavaMailSender mailSender;
+    private static final Logger log = LoggerFactory.getLogger(EmailService.class);
 
-    @Autowired
-    private RessourceRepository ressourceRepository;
+    private final JavaMailSender mailSender;
+    private final RessourceRepository ressourceRepository;
+    private final DepartementRepository departementRepository;
+    private final AppConfig appConfig;
 
-    private List<String> activeLevels;
-
-    public EmailService(@Value("${alerte.niveaux.actifs:2,3,4}") List<String> initialActiveLevels) {
-        this.activeLevels = new ArrayList<>(initialActiveLevels);
+    public EmailService(JavaMailSender mailSender, 
+                        RessourceRepository ressourceRepository, 
+                        DepartementRepository departementRepository,
+                        AppConfig appConfig) {
+        this.mailSender = mailSender;
+        this.ressourceRepository = ressourceRepository;
+        this.departementRepository = departementRepository;
+        this.appConfig = appConfig;
     }
 
-    public List<String> getActiveLevels() {
-        return activeLevels;
-    }
-
-    public void setActiveLevels(List<String> activeLevels) {
-        this.activeLevels = activeLevels;
-    }
 
     public void sendHtmlEmail(String to, String subject, String htmlContent) {
         try {
@@ -66,9 +67,14 @@ public class EmailService {
             }
         }
 
+        List<String> activeLevels = appConfig.getActiveLevels();
+        List<String> activeTypes  = appConfig.getActiveTypes();
+
         for (Map.Entry<String, List<ContactAlerteDTO>> entry : alertsByEmail.entrySet()) {
+            // On envoie uniquement si au moins une alerte correspond au niveau ET au type actifs
             boolean hasAlert = entry.getValue().stream()
-                    .anyMatch(a -> activeLevels.contains(String.valueOf(a.niveau())));
+                    .anyMatch(a -> activeLevels.contains(String.valueOf(a.niveau()))
+                               && activeTypes.contains(String.valueOf(a.type())));
 
             if (hasAlert) {
                 String email = entry.getKey();
@@ -91,12 +97,17 @@ public class EmailService {
         sb.append("<p style=\"font-size: 16px; color: #555555; line-height: 1.5;\">Des alertes météorologiques sont en cours dans le département où vous avez une intervention prévue.</p>");
         sb.append("<h3 style=\"color: #2c3e50; margin-top: 25px; border-bottom: 2px solid #ecf0f1; padding-bottom: 10px;\">Récapitulatif des alertes actives :</h3>");
 
+        List<String> activeLevels = appConfig.getActiveLevels();
+        List<String> activeTypes  = appConfig.getActiveTypes();
+
         for (ContactAlerteDTO alert : alerts) {
             String levelValue = String.valueOf(alert.niveau());
+            String typeValue  = String.valueOf(alert.type());
 
-            if (activeLevels.contains(levelValue)) {
-                String type = getAlertTypeName(String.valueOf(alert.type()));
-                String advice = getAlertAdvice(String.valueOf(alert.type()));
+            // Affiche l'alerte dans le mail uniquement si le niveau ET le type sont actifs
+            if (activeLevels.contains(levelValue) && activeTypes.contains(typeValue)) {
+                String type = getAlertTypeName(typeValue);
+                String advice = getAlertAdvice(typeValue);
                 String level = getAlertLevelName(levelValue);
                 String color = getColor(levelValue);
                 String bgColor = getBgColor(levelValue);
@@ -161,5 +172,18 @@ public class EmailService {
         if ("3".equals(levelId)) return "ORANGE";
         if ("4".equals(levelId)) return "ROUGE";
         return "INCONNU";
+    }
+
+    public void sendAlertEmailsToAllDepartments() {
+        String today = LocalDate.now().toString();
+        List<Departement> departments = departementRepository.findAll();
+
+        for (Departement dept : departments) {
+            try {
+                sendAlertEmails(today, dept.getNum());
+            } catch (Exception e) {
+                log.error("Error sending alert emails for department: " + dept.getNum(), e);
+            }
+        }
     }
 }

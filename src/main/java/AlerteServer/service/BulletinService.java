@@ -8,6 +8,8 @@ import AlerteServer.entity.Bulletin;
 import AlerteServer.entity.Daily_meteo;
 import AlerteServer.exception.IdNotFoundException;
 import AlerteServer.repository.BulletinRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -18,6 +20,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class BulletinService {
+
+    private static final Logger log = LoggerFactory.getLogger(BulletinService.class);
 
     @Autowired
     private BulletinRepository bulletinRepository;
@@ -110,5 +114,16 @@ public class BulletinService {
                 .stream()
                 .map(this::mapToDetailDTO)
                 .toList();
+    }
+
+    public void purgeOldData() {
+        LocalDate limitDate = LocalDate.now().minusMonths(1);
+        log.info("Purge des bulletins antérieurs au : {}", limitDate);
+        try {
+            bulletinRepository.deleteOldBulletins(limitDate);
+            log.info("Purge effectuée avec succès.");
+        } catch (Exception e) {
+            log.error("Erreur lors de la purge des données", e);
+        }
     }
 }

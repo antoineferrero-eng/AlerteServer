@@ -2,7 +2,6 @@ package AlerteServer.controller;
 
 import AlerteServer.dto.ContactAlerteDTO;
 import AlerteServer.dto.RessourceDTO;
-import AlerteServer.entity.Ressource;
 import AlerteServer.service.RessourceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -12,9 +11,12 @@ import java.util.List;
 @RestController
 @RequestMapping("/ressources")
 public class RessourceController {
+    
+    private final RessourceService ressourceService;
 
-    @Autowired
-    private RessourceService ressourceService;
+    public RessourceController(RessourceService ressourceService) {
+        this.ressourceService = ressourceService;
+    }
 
     @GetMapping
     public List<RessourceDTO> getAll() {

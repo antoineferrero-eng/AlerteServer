@@ -26,8 +26,10 @@ public class GlobalExceptionHandler {
     // Gestion des erreurs de type dans l'URL
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<Object> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        Class<?> requiredType = ex.getRequiredType();
+        String typeName = (requiredType != null) ? requiredType.getSimpleName() : "inconnu";
         String message = String.format("Le paramètre '%s' doit être de type %s.",
-                ex.getName(), ex.getRequiredType().getSimpleName());
+                ex.getName(), typeName);
         return new ResponseEntity<>(buildErrorBody(message, HttpStatus.BAD_REQUEST), HttpStatus.BAD_REQUEST);
     }
 
