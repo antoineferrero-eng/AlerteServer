@@ -1,25 +1,22 @@
 package AlerteServer.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "ressource")
 public class Ressource {
-
     @Id
     @Column(name = "dk_code")
     private String dkCode;
-
-    @Column(name = "lib_fonction")
     private String libFonction;
-
-    @Column(name = "tel_portable")
     private String telPortable;
-
     private String email;
+
+    @OneToMany(mappedBy = "ressource")
+    private Set<Ot> ordresDeTravail = new HashSet<>();
 
     public String getDkCode() {
         return dkCode;
@@ -52,4 +49,5 @@ public class Ressource {
     public void setEmail(String email) {
         this.email = email;
     }
+
 }

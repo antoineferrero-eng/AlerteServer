@@ -1,5 +1,6 @@
 package AlerteServer.service;
 
+import AlerteServer.dto.OtDTO;
 import AlerteServer.entity.Ot;
 import AlerteServer.exception.IdNotFoundException;
 import AlerteServer.repository.OtRepository;
@@ -14,12 +15,22 @@ public class OtService {
     @Autowired
     private OtRepository otRepository;
 
-    public List<Ot> getAll() {
-        return otRepository.findAll();
+    public List<OtDTO> getAll() {
+        return otRepository.findAll()
+                .stream()
+                .map(this::mapToDTO)
+                .toList();
     }
 
-    public Ot getById(String id) {
+    public OtDTO getById(String id) {
         return otRepository.findById(id)
+                .map(this::mapToDTO)
                 .orElseThrow(() -> new IdNotFoundException("Ot not found: " + id));
+    }
+
+    private OtDTO mapToDTO(Ot ot) {
+        String ressourceId = (ot.getRessource() != null) ? ot.getRessource().getDkCode() : null;
+        String emplacementId = (ot.getEmplacement() != null) ? ot.getEmplacement().getDkCode() : null;
+        return new OtDTO(ot.getNumeroOt(), ot.getCrDebutIntervention(), ressourceId, emplacementId);
     }
 }

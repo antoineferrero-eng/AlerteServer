@@ -1,5 +1,6 @@
 package AlerteServer.service;
 
+import AlerteServer.dto.DepartementDTO;
 import AlerteServer.entity.Departement;
 import AlerteServer.exception.IdNotFoundException;
 import AlerteServer.repository.DepartementRepository;
@@ -14,12 +15,24 @@ public class DepartementService {
     @Autowired
     private DepartementRepository departementRepository;
 
-    public List<Departement> getAll() {
-        return departementRepository.findAll();
+    public List<DepartementDTO> getAll() {
+        return departementRepository.findAll()
+                .stream()
+                .map(this::mapToDTO)
+                .toList();
     }
 
-    public Departement getById(String id) {
+    public DepartementDTO getById(String id) {
         return departementRepository.findById(id)
-                .orElseThrow(() -> new IdNotFoundException("Dep not found: " + id));
+                .map(this::mapToDTO)
+                .orElseThrow(() -> new IdNotFoundException("Departement not found: " + id));
+    }
+
+    private DepartementDTO mapToDTO(Departement departement) {
+        return new DepartementDTO(
+                departement.getNum(),
+                departement.getLat(),
+                departement.getLongitude()
+        );
     }
 }
