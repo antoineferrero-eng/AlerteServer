@@ -1,16 +1,13 @@
 package AlerteServer.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "site")
 public class Site {
-
     @Id
     @Column(name = "dk_code")
     private String dkCode;
@@ -22,6 +19,12 @@ public class Site {
     @ManyToOne
     @JoinColumn(name = "dk_code_parent")
     private Site parent;
+
+    @OneToMany(mappedBy = "parent")
+    private Set<Site> subSites = new HashSet<>();
+
+    @OneToMany(mappedBy = "emplacement")
+    private Set<Ot> ordresDeTravail = new HashSet<>();
 
     public String getDkCode() {
         return dkCode;

@@ -3,8 +3,6 @@ package AlerteServer.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
-import java.time.LocalDateTime;
-
 @Entity
 @Table(name = "alerte")
 public class Alerte {

@@ -1,22 +1,25 @@
 package AlerteServer.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "departement")
 public class Departement {
-
     @Id
     @Column(name = "num")
     private String num;
-
     private Double lat;
-
     @Column(name = "long")
     private Double longitude;
+
+    @OneToMany(mappedBy = "departement")
+    private Set<Site> sites = new HashSet<>();
+
+    @OneToMany(mappedBy = "departement")
+    private Set<Bulletin> bulletins = new HashSet<>();
 
     public String getNum() {
         return num;

@@ -20,8 +20,6 @@ public class Daily_meteoService {
 
     public Daily_meteo getById(Long id) {
         return dailyMeteoRepository.findById(id)
-                .orElseThrow(() -> new IdNotFoundException("Dep not found: " + id));
+                .orElseThrow(() -> new IdNotFoundException("Daily-meteo not found: " + id));
     }
-
-
 }
