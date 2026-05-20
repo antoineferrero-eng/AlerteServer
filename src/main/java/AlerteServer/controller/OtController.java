@@ -1,6 +1,7 @@
 package AlerteServer.controller;
 
 import AlerteServer.dto.OtDTO;
+import AlerteServer.entity.Ot;
 import AlerteServer.service.OtService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,11 +20,20 @@ public class OtController {
 
     @GetMapping
     public List<OtDTO> getAll() {
-        return otService.getAll();
+        return otService.getAll()
+                .stream()
+                .map(this::mapToDTO)
+                .toList();
     }
 
     @GetMapping("/{id}")
     public OtDTO getById(@PathVariable String id) {
-        return otService.getById(id);
+        return mapToDTO(otService.getById(id));
+    }
+
+    private OtDTO mapToDTO(Ot ot) {
+        String ressourceId = (ot.getRessource() != null) ? ot.getRessource().getDkCode() : null;
+        String emplacementId = (ot.getEmplacement() != null) ? ot.getEmplacement().getDkCode() : null;
+        return new OtDTO(ot.getNumeroOt(), ot.getCrDebutIntervention(), ressourceId, emplacementId);
     }
 }
