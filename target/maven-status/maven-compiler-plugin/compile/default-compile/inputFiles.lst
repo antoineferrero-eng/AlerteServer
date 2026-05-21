@@ -22,6 +22,7 @@
 /home/antoine/Documents/stage/projet/AlerteServer/src/main/java/AlerteServer/dto/MailCronResponseDTO.java
 /home/antoine/Documents/stage/projet/AlerteServer/src/main/java/AlerteServer/dto/OtDTO.java
 /home/antoine/Documents/stage/projet/AlerteServer/src/main/java/AlerteServer/dto/RessourceDTO.java
+/home/antoine/Documents/stage/projet/AlerteServer/src/main/java/AlerteServer/dto/RessourceManageDTO.java
 /home/antoine/Documents/stage/projet/AlerteServer/src/main/java/AlerteServer/dto/SiteDTO.java
 /home/antoine/Documents/stage/projet/AlerteServer/src/main/java/AlerteServer/dto/TypesResponseDTO.java
 /home/antoine/Documents/stage/projet/AlerteServer/src/main/java/AlerteServer/dto/UpdateCronResponseDTO.java

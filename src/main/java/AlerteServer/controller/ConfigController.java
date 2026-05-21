@@ -49,10 +49,11 @@ public class ConfigController {
     }
 
     @PostMapping("/mail-time")
-    public ResponseEntity<?> setMailCron(@RequestBody Map<String, String> body) {
+    public ResponseEntity<MailCronResponseDTO> setMailCron(@RequestBody Map<String, String> body) {
         String cron = body.get("cron");
         if (cron == null || !CronExpression.isValidExpression(cron)) {
-            return ResponseEntity.badRequest().body(new MailCronResponseDTO("error: invalid cron", appConfig.getMailCron()));
+            return ResponseEntity.badRequest()
+                    .body(new MailCronResponseDTO("error: invalid cron", appConfig.getMailCron()));
         }
         appConfig.setMailCron(cron);
         schedulingService.rescheduleMail();
@@ -65,10 +66,11 @@ public class ConfigController {
     }
 
     @PostMapping("/update-time")
-    public ResponseEntity<?> setUpdateCron(@RequestBody Map<String, String> body) {
+    public ResponseEntity<UpdateCronResponseDTO> setUpdateCron(@RequestBody Map<String, String> body) {
         String cron = body.get("cron");
         if (cron == null || !CronExpression.isValidExpression(cron)) {
-            return ResponseEntity.badRequest().body(new UpdateCronResponseDTO("error: invalid cron", appConfig.getUpdateCron()));
+            return ResponseEntity.badRequest()
+                    .body(new UpdateCronResponseDTO("error: invalid cron", appConfig.getUpdateCron()));
         }
         appConfig.setUpdateCron(cron);
         schedulingService.rescheduleDataUpdate();
@@ -81,7 +83,6 @@ public class ConfigController {
                 appConfig.getActiveLevels(),
                 appConfig.getActiveTypes(),
                 appConfig.getMailCron(),
-                appConfig.getUpdateCron()
-        );
+                appConfig.getUpdateCron());
     }
 }

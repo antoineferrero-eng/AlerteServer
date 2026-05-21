@@ -16,10 +16,10 @@ public class AppConfig {
     private String updateCron;
 
     public AppConfig(
-            @Value("${alerte.niveaux.actifs:2,3,4}") List<String> activeLevels,
-            @Value("${alerte.types.actifs:1,2,3,4,5,6,7,8,9}") List<String> activeTypes,
-            @Value("${alerte.mail.cron:0 0 8 * * *}") String mailCron,
-            @Value("${alerte.update.cron:0 0 6 * * *}") String updateCron
+            @Value("${alerte.niveaux.actifs}") List<String> activeLevels,
+            @Value("${alerte.types.actifs}") List<String> activeTypes,
+            @Value("${alerte.mail.cron}") String mailCron,
+            @Value("${alerte.update.cron}") String updateCron
     ) {
         this.activeLevels = activeLevels.stream().map(String::trim).collect(Collectors.toCollection(ArrayList::new));
         this.activeTypes = activeTypes.stream().map(String::trim).collect(Collectors.toCollection(ArrayList::new));

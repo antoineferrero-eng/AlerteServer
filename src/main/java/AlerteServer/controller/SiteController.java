@@ -1,6 +1,7 @@
 package AlerteServer.controller;
 
 import AlerteServer.dto.SiteDTO;
+import AlerteServer.entity.Site;
 import AlerteServer.service.SiteService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,7 +30,10 @@ public class SiteController {
      */
     @GetMapping
     public List<SiteDTO> getAll() {
-        return siteService.getAll();
+        return siteService.getAll()
+                .stream()
+                .map(this::mapToDTO)
+                .toList();
     }
 
     /**
@@ -40,6 +44,12 @@ public class SiteController {
      */
     @GetMapping("/{id}")
     public SiteDTO getById(@PathVariable String id) {
-        return siteService.getById(id);
+        return mapToDTO(siteService.getById(id));
+    }
+
+    private SiteDTO mapToDTO(Site site) {
+        String parentId = (site.getParent() != null) ? site.getParent().getDkCode() : null;
+        String deptNum = (site.getDepartement() != null) ? site.getDepartement().getNum() : null;
+        return new SiteDTO(site.getDkCode(), deptNum, parentId);
     }
 }
