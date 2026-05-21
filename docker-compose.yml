@@ -13,9 +13,11 @@ services:
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=password
     depends_on:
-      - postgres
+      postgres:
+        condition: service_started
     networks:
       - alerte-network
+    restart: always
 
   postgres:
     image: postgres:15-alpine
@@ -26,12 +28,14 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data_v2:/var/lib/postgresql/data
     networks:
       - alerte-network
+    restart: always
 
 networks:
   alerte-network:
+    driver: bridge
 
 volumes:
-  postgres_data:
+  postgres_data_v2:
