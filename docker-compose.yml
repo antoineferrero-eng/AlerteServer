@@ -14,7 +14,7 @@ services:
       - SPRING_DATASOURCE_PASSWORD=password
     depends_on:
       postgres:
-        condition: service_healthy
+        condition: service_started
     networks:
       - alerte-network
     restart: always
@@ -28,17 +28,14 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data_v2:/var/lib/postgresql/data
     networks:
       - alerte-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d alertedb"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
+    restart: always
 
 networks:
   alerte-network:
+    driver: bridge
 
 volumes:
-  postgres_data:
+  postgres_data_v2:
