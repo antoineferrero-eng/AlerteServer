@@ -20,4 +20,18 @@ public class UserController {
     public UserDTO getCurrentUser(@AuthenticationPrincipal Jwt jwt) {
         return userService.getOrCreateUserFromJwt(jwt);
     }
+
+    @GetMapping
+    public java.util.List<UserDTO> getAllUsers(@AuthenticationPrincipal Jwt jwt) {
+        return userService.getAllUsers(jwt);
+    }
+
+    @org.springframework.web.bind.annotation.PatchMapping("/{id}")
+    public UserDTO updateUser(@org.springframework.web.bind.annotation.PathVariable Long id,
+                              @org.springframework.web.bind.annotation.RequestBody UpdateUserRequest request,
+                              @AuthenticationPrincipal Jwt jwt) {
+        return userService.updateUser(id, request.level(), request.region(), jwt);
+    }
 }
+
+record UpdateUserRequest(Integer level, String region) {}

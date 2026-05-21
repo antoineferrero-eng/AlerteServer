@@ -20,6 +20,8 @@ public class User {
     @Column(nullable = false)
     private Integer level;
 
+    private String region;
+
     public Long getId() {
         return id;
     }
@@ -58,5 +60,13 @@ public class User {
 
     public void setLevel(Integer level) {
         this.level = level;
+    }
+
+    public String getRegion() {
+        return region;
+    }
+
+    public void setRegion(String region) {
+        this.region = region;
     }
 }

@@ -43,7 +43,7 @@ public class AdminInterceptor implements HandlerInterceptor {
         if (principal instanceof Jwt jwt) {
             String mail = jwt.getClaimAsString("email");
             User user = userRepository.findByMail(mail).orElse(null);
-            if (user != null && user.getLevel() == 2) {
+            if (user != null && user.getLevel() >= 2) {
                 return true;
             }
         }

@@ -21,8 +21,10 @@ import java.util.Map;
 
 /**
  * Service de gestion et d'envoi des notifications par e-mail.
- * Responsable de la construction des e-mails HTML d'alerte météo, du filtrage des alertes actives,
- * et de l'envoi de ces e-mails via SMTP aux ressources (intervenants) ayant des interventions planifiées.
+ * Responsable de la construction des e-mails HTML d'alerte météo, du filtrage
+ * des alertes actives,
+ * et de l'envoi de ces e-mails via SMTP aux ressources (intervenants) ayant des
+ * interventions planifiées.
  */
 @Service
 public class EmailService {
@@ -46,12 +48,14 @@ public class EmailService {
 
     /**
      * Envoie un e-mail au format HTML à un destinataire donné.
-     * Utilise JavaMailSender et configure l'expéditeur, le destinataire, l'objet et le contenu.
+     * Utilise JavaMailSender et configure l'expéditeur, le destinataire, l'objet et
+     * le contenu.
      *
-     * @param to l'adresse e-mail du destinataire
-     * @param subject l'objet du message
+     * @param to          l'adresse e-mail du destinataire
+     * @param subject     l'objet du message
      * @param htmlContent le corps du message formaté en HTML
-     * @throws RuntimeException en cas d'erreur de messagerie (ex: SMTP inaccessible)
+     * @throws RuntimeException en cas d'erreur de messagerie (ex: SMTP
+     *                          inaccessible)
      */
     public void sendHtmlEmail(String to, String subject, String htmlContent) {
         try {
@@ -68,9 +72,12 @@ public class EmailService {
     }
 
     /**
-     * Envoie les e-mails d'alerte météo pour un département spécifique à une date donnée.
-     * Détermine les contacts concernés (intervenants planifiés dans ce département),
-     * regroupe les alertes par adresse email, vérifie si elles correspondent aux filtres actifs,
+     * Envoie les e-mails d'alerte météo pour un département spécifique à une date
+     * donnée.
+     * Détermine les contacts concernés (intervenants planifiés dans ce
+     * département),
+     * regroupe les alertes par adresse email, vérifie si elles correspondent aux
+     * filtres actifs,
      * et envoie un e-mail HTML récapitulatif à chaque personne concernée.
      *
      * @param dateStr la date de l'intervention au format "AAAA-MM-JJ"
@@ -106,11 +113,84 @@ public class EmailService {
     }
 
     /**
+     * Envoie un e-mail HTML d'alerte manuelle pour une ressource spécifique,
+     * en listant ses vigilances actives.
+     *
+     * @param dkCode l'identifiant unique de la ressource
+     * @param to     l'adresse email de la ressource
+     * @param alerts la liste de toutes ses alertes météo actives
+     */
+    public void sendManualAlertEmail(String dkCode, String to, List<ContactAlerteDTO> alerts) {
+        List<String> activeLevels = appConfig.getActiveLevels();
+        List<String> activeTypes = appConfig.getActiveTypes();
+
+        StringBuilder sb = new StringBuilder();
+        sb.append(
+                "<html><body style=\"font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; padding: 20px; margin: 0;\">");
+        sb.append(
+                "<div style=\"max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);\">");
+        sb.append("<div style=\"background-color: #007bff; color: #ffffff; padding: 20px; text-align: center;\">");
+        sb.append("<h2 style=\"margin: 0; font-size: 24px;\">Alerte Vigilance</h2>");
+        sb.append("<p style=\"margin: 5px 0 0 0; font-size: 16px; opacity: 0.9;\">Intervenant : ").append(dkCode)
+                .append("</p>");
+        sb.append("</div>");
+        sb.append("<div style=\"padding: 30px;\">");
+        sb.append("<p style=\"font-size: 16px; color: #333333; margin-top: 0;\">Bonjour,</p>");
+        sb.append(
+                "<p style=\"font-size: 16px; color: #555555; line-height: 1.5;\">Ceci est un rappel de vigilance envoyé manuellement concernant vos chantiers du jour.</p>");
+
+        boolean hasAlerts = false;
+        if (alerts != null && !alerts.isEmpty()) {
+            sb.append(
+                    "<h3 style=\"color: #2c3e50; margin-top: 25px; border-bottom: 2px solid #ecf0f1; padding-bottom: 10px;\">Vigilances actives sur vos chantiers :</h3>");
+            for (ContactAlerteDTO alert : alerts) {
+                String levelValue = String.valueOf(alert.niveau());
+                String typeValue = String.valueOf(alert.type());
+
+                if (activeLevels.contains(levelValue) && activeTypes.contains(typeValue)) {
+                    hasAlerts = true;
+                    String type = getAlertTypeName(typeValue);
+                    String advice = getAlertAdvice(typeValue);
+                    String level = getAlertLevelName(levelValue);
+                    String color = getColor(levelValue);
+                    String bgColor = getBgColor(levelValue);
+
+                    sb.append("<div style=\"margin-bottom: 20px; padding: 15px; border-left: 5px solid ").append(color)
+                            .append("; background-color: ").append(bgColor).append("; border-radius: 0 6px 6px 0;\">");
+                    sb.append("<h4 style=\"margin: 0 0 8px 0; color: ").append(color).append("; font-size: 18px;\">")
+                            .append(type).append(" - Niveau ").append(level).append("</h4>");
+                    sb.append(
+                            "<p style=\"margin: 0; font-size: 15px; color: #444444; line-height: 1.5;\"><strong>Conseil : </strong>")
+                            .append(advice).append("</p>");
+                    sb.append("</div>");
+                }
+            }
+        }
+
+        if (!hasAlerts) {
+            sb.append(
+                    "<div style=\"padding: 15px; background-color: #eafaf1; border-left: 5px solid #27ae60; color: #27ae60; border-radius: 6px; margin: 20px 0;\">");
+            sb.append(
+                    "<p style=\"margin: 0; font-weight: bold;\">Aucune vigilance météorologique active n'est signalée sur vos chantiers planifiés pour aujourd'hui.</p>");
+            sb.append("</div>");
+        }
+
+        sb.append(
+                "<p style=\"font-size: 16px; color: #555555; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ecf0f1;\">Merci de rester prudent lors de vos déplacements.</p>");
+        sb.append(
+                "<p style=\"font-size: 16px; color: #333333; font-weight: bold;\">Cordialement,<br>L'équipe d@cAlerte</p>");
+        sb.append("</div></div></body></html>");
+
+        sendHtmlEmail(to, "ALERTE VIGILANCE", sb.toString());
+    }
+
+    /**
      * Construit le corps de l'e-mail HTML destiné à un intervenant.
-     * Génère un récapitulatif visuel et stylisé avec les conseils professionnels associés
+     * Génère un récapitulatif visuel et stylisé avec les conseils professionnels
+     * associés
      * pour chaque type de vigilance météo active.
      *
-     * @param alerts la liste des alertes concernant cet intervenant
+     * @param alerts  la liste des alertes concernant cet intervenant
      * @param deptNum le numéro du département concerné
      * @return une chaîne contenant le code HTML de l'e-mail
      */
@@ -166,7 +246,8 @@ public class EmailService {
     }
 
     /**
-     * Retourne la couleur hexadécimale associée à un niveau de vigilance pour le style HTML.
+     * Retourne la couleur hexadécimale associée à un niveau de vigilance pour le
+     * style HTML.
      */
     private String getColor(String levelId) {
         if ("2".equals(levelId))
@@ -179,7 +260,8 @@ public class EmailService {
     }
 
     /**
-     * Retourne la couleur d'arrière-plan hexadécimale associée à un niveau de vigilance pour le style HTML.
+     * Retourne la couleur d'arrière-plan hexadécimale associée à un niveau de
+     * vigilance pour le style HTML.
      */
     private String getBgColor(String levelId) {
         if ("2".equals(levelId))
@@ -192,7 +274,8 @@ public class EmailService {
     }
 
     /**
-     * Traduit le code numérique d'un type d'alerte Météo-France en libellé textuel lisible.
+     * Traduit le code numérique d'un type d'alerte Météo-France en libellé textuel
+     * lisible.
      */
     private String getAlertTypeName(String typeId) {
         if ("1".equals(typeId))
@@ -243,7 +326,8 @@ public class EmailService {
     }
 
     /**
-     * Traduit l'identifiant numérique du niveau d'alerte en libellé textuel lisible.
+     * Traduit l'identifiant numérique du niveau d'alerte en libellé textuel
+     * lisible.
      */
     private String getAlertLevelName(String levelId) {
         if ("1".equals(levelId))
