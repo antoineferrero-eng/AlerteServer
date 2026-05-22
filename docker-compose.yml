@@ -13,6 +13,8 @@ services:
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=password
       - GOOGLE_CLIENT_ID=326672551116-bmjtj504t0as6rn8ok22sli8u3k6v97c.apps.googleusercontent.com
+      - MAIL_USERNAME=${MAIL_USERNAME}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
     depends_on:
       postgres:
         condition: service_started
