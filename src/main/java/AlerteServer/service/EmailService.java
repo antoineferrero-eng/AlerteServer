@@ -129,20 +129,20 @@ public class EmailService {
                 "<html><body style=\"font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; padding: 20px; margin: 0;\">");
         sb.append(
                 "<div style=\"max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);\">");
-        sb.append("<div style=\"background-color: #007bff; color: #ffffff; padding: 20px; text-align: center;\">");
-        sb.append("<h2 style=\"margin: 0; font-size: 24px;\">Alerte Vigilance</h2>");
+        sb.append("<div style=\"background-color: #2c3e50; color: #ffffff; padding: 20px; text-align: center;\">");
+        sb.append("<h2 style=\"margin: 0; font-size: 24px;\">Vigilance Météo</h2>");
         sb.append("<p style=\"margin: 5px 0 0 0; font-size: 16px; opacity: 0.9;\">Intervenant : ").append(dkCode)
                 .append("</p>");
         sb.append("</div>");
         sb.append("<div style=\"padding: 30px;\">");
         sb.append("<p style=\"font-size: 16px; color: #333333; margin-top: 0;\">Bonjour,</p>");
         sb.append(
-                "<p style=\"font-size: 16px; color: #555555; line-height: 1.5;\">Ceci est un rappel de vigilance envoyé manuellement concernant vos chantiers du jour.</p>");
+                "<p style=\"font-size: 16px; color: #555555; line-height: 1.5;\">Ceci est un rappel de vigilance envoyé manuellement concernant vos interventions du jour.</p>");
 
         boolean hasAlerts = false;
         if (alerts != null && !alerts.isEmpty()) {
             sb.append(
-                    "<h3 style=\"color: #2c3e50; margin-top: 25px; border-bottom: 2px solid #ecf0f1; padding-bottom: 10px;\">Vigilances actives sur vos chantiers :</h3>");
+                    "<h3 style=\"color: #2c3e50; margin-top: 25px; border-bottom: 2px solid #ecf0f1; padding-bottom: 10px;\">Récapitulatif des alertes actives :</h3>");
             for (ContactAlerteDTO alert : alerts) {
                 String levelValue = String.valueOf(alert.niveau());
                 String typeValue = String.valueOf(alert.type());
@@ -176,12 +176,11 @@ public class EmailService {
         }
 
         sb.append(
-                "<p style=\"font-size: 16px; color: #555555; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ecf0f1;\">Merci de rester prudent lors de vos déplacements.</p>");
-        sb.append(
-                "<p style=\"font-size: 16px; color: #333333; font-weight: bold;\">Cordialement,<br>L'équipe d@cAlerte</p>");
+                "<p style=\"font-size: 16px; color: #555555; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ecf0f1;\">Merci de prendre les précautions nécessaires avant votre déplacement.</p>");
+        sb.append("<p style=\"font-size: 16px; color: #333333; font-weight: bold;\">Merci de votre compréhension.</p>");
         sb.append("</div></div></body></html>");
 
-        sendHtmlEmail(to, "ALERTE VIGILANCE", sb.toString());
+        sendHtmlEmail(to, "ALERTE MÉTÉO", sb.toString());
     }
 
     /**
